@@ -1,6 +1,7 @@
 package com.sequenceiq.cloudbreak.converter.v4.environment.network;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -8,6 +9,7 @@ import com.sequenceiq.cloudbreak.common.mappable.CloudPlatform;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.environment.base.EnvironmentNetworkAzureV4Params;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.environment.requests.EnvironmentNetworkV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.environment.responses.EnvironmentNetworkV4Response;
+import com.sequenceiq.cloudbreak.cloud.model.CreatedCloudNetwork;
 import com.sequenceiq.cloudbreak.domain.environment.AzureNetwork;
 import com.sequenceiq.cloudbreak.domain.environment.BaseNetwork;
 
@@ -19,7 +21,20 @@ public class AzureEnvironmentNetworkConverter extends EnvironmentBaseNetworkConv
         EnvironmentNetworkAzureV4Params azureParams = source.getAzure();
         AzureNetwork azureNetwork = new AzureNetwork();
         azureNetwork.setNetworkId(azureParams.getNetworkId());
+        azureNetwork.setSubnetIds(source.getSubnetIds());
         azureNetwork.setResourceGroupName(azureParams.getResourceGroupName());
+        azureNetwork.setNoPublicIp(azureParams.getNoPublicIp());
+        azureNetwork.setNoFirewallRules(azureParams.getNoFirewallRules());
+        return azureNetwork;
+    }
+
+    @Override
+    BaseNetwork createProviderSpecificNetwork(EnvironmentNetworkV4Request source, CreatedCloudNetwork createdCloudNetwork) {
+        EnvironmentNetworkAzureV4Params azureParams = source.getAzure();
+        AzureNetwork azureNetwork = new AzureNetwork();
+        azureNetwork.setNetworkId(createdCloudNetwork.getNetworkId());
+        azureNetwork.setSubnetIds(createdCloudNetwork.getSubnetIds());
+        azureNetwork.setResourceGroupName(String.valueOf(createdCloudNetwork.getProperties().get("resourceGroupName")));
         azureNetwork.setNoPublicIp(azureParams.getNoPublicIp());
         azureNetwork.setNoFirewallRules(azureParams.getNoFirewallRules());
         return azureNetwork;
@@ -50,5 +65,10 @@ public class AzureEnvironmentNetworkConverter extends EnvironmentBaseNetworkConv
     @Override
     public CloudPlatform getCloudPlatform() {
         return CloudPlatform.AZURE;
+    }
+
+    @Override
+    public boolean hasExistingNetwork(EnvironmentNetworkV4Request source) {
+        return Optional.of(source).map(EnvironmentNetworkV4Request::getAzure).map(EnvironmentNetworkAzureV4Params::getNetworkId).isPresent();
     }
 }

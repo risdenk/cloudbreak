@@ -10,12 +10,14 @@ import org.slf4j.LoggerFactory;
 
 import com.sequenceiq.cloudbreak.api.endpoint.v4.environment.requests.EnvironmentNetworkV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.environment.responses.EnvironmentNetworkV4Response;
+import com.sequenceiq.cloudbreak.cloud.model.CreatedCloudNetwork;
 import com.sequenceiq.cloudbreak.common.converter.MissingResourceNameGenerator;
 import com.sequenceiq.cloudbreak.common.json.Json;
 import com.sequenceiq.cloudbreak.common.type.APIResourceType;
 import com.sequenceiq.cloudbreak.domain.Network;
 import com.sequenceiq.cloudbreak.domain.environment.BaseNetwork;
 import com.sequenceiq.cloudbreak.domain.environment.Environment;
+import com.sequenceiq.cloudbreak.domain.environment.RegistrationType;
 
 public abstract class EnvironmentBaseNetworkConverter implements EnvironmentNetworkConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnvironmentBaseNetworkConverter.class);
@@ -26,11 +28,24 @@ public abstract class EnvironmentBaseNetworkConverter implements EnvironmentNetw
     @Override
     public BaseNetwork convert(EnvironmentNetworkV4Request source, Environment environment) {
         BaseNetwork result = createProviderSpecificNetwork(source);
+        setBasicProperties(source, environment, result, RegistrationType.EXISTING);
+        return result;
+    }
+
+    @Override
+    public BaseNetwork convertNewNetwork(EnvironmentNetworkV4Request source, Environment environment, CreatedCloudNetwork createdCloudNetwork) {
+        BaseNetwork result = createProviderSpecificNetwork(source, createdCloudNetwork);
+        setBasicProperties(source, environment, result, RegistrationType.CREATE_NEW);
+        return result;
+    }
+
+    private void setBasicProperties(EnvironmentNetworkV4Request source, Environment environment, BaseNetwork result, RegistrationType existing) {
         result.setName(environment.getName());
         result.setEnvironment(environment);
         result.setWorkspace(environment.getWorkspace());
-        result.setSubnetIds(source.getSubnetIds());
-        return result;
+        result.setSubnetCidrs(source.getSubnetCidrs());
+        result.setNetworkCidr(source.getNetworkCidr());
+        result.setRegistrationType(existing);
     }
 
     @Override
@@ -39,6 +54,7 @@ public abstract class EnvironmentBaseNetworkConverter implements EnvironmentNetw
         result.setId(source.getId());
         result.setName(source.getName());
         result.setSubnetIds(source.getSubnetIdsSet());
+        result.setSubnetCidrs(source.getSubnetCidrsSet());
         result = setProviderSpecificFields(result, source);
         return result;
     }
@@ -51,15 +67,14 @@ public abstract class EnvironmentBaseNetworkConverter implements EnvironmentNetw
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("subnetId", String.join(",", source.getSubnetIdsSet()));
+        attributes.put("subnetCidrs", String.join(",", source.getSubnetCidrsSet()));
         attributes.put("cloudPlatform", getCloudPlatform().name());
         attributes.putAll(getAttributesForLegacyNetwork(source));
-        try {
-            result.setAttributes(new Json(attributes));
-        } catch (IllegalArgumentException e) {
-            LOGGER.debug("Environment's network could not be converted to network.", e);
-        }
+        result.setAttributes(new Json(attributes));
         return result;
     }
+
+    abstract BaseNetwork createProviderSpecificNetwork(EnvironmentNetworkV4Request source, CreatedCloudNetwork createdCloudNetwork);
 
     abstract BaseNetwork createProviderSpecificNetwork(EnvironmentNetworkV4Request source);
 
