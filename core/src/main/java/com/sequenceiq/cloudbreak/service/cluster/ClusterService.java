@@ -682,7 +682,7 @@ public class ClusterService {
 //        if (!repairWithReattach && (isGateway(hostMetadata) && !isMultipleGateway(stack))) {
 //            throw new BadRequestException("Ambari server failure cannot be repaired with single gateway!");
 //        }
-        if (isGateway(hostMetadata) && withEmbeddedAmbariDB(stack.getCluster())) {
+        if (isGateway(hostMetadata) && withEmbeddedDB(stack.getCluster())) {
             throw new BadRequestException("Ambari server failure with embedded database cannot be repaired!");
         }
     }
@@ -719,8 +719,11 @@ public class ClusterService {
         return hostMetadata.getHostGroup().getConstraint().getInstanceGroup().getInstanceGroupType() == InstanceGroupType.GATEWAY;
     }
 
-    private boolean withEmbeddedAmbariDB(Cluster cluster) {
+    private boolean withEmbeddedDB(Cluster cluster) {
         RDSConfig rdsConfig = rdsConfigService.findByClusterIdAndType(cluster.getId(), DatabaseType.AMBARI);
+        if (rdsConfig == null) {
+            rdsConfig = rdsConfigService.findByClusterIdAndType(cluster.getId(), DatabaseType.CLOUDERA_MANAGER);
+        }
         return rdsConfig == null || DatabaseVendor.EMBEDDED == rdsConfig.getDatabaseEngine();
     }
 
@@ -881,7 +884,7 @@ public class ClusterService {
                 initKerberos(kerberosPassword, kerberosPrincipal, cluster);
             }
             Blueprint blueprint = blueprintService.getByNameForWorkspace(blueprintName, stack.getWorkspace());
-            if (!withEmbeddedAmbariDB(cluster)) {
+            if (!withEmbeddedDB(cluster)) {
                 throw new BadRequestException("Ambari doesn't support resetting external DB automatically. To reset Ambari Server schema you must first drop "
                         + "and then create it using DDL scripts from /var/lib/ambari-server/resources");
             }
