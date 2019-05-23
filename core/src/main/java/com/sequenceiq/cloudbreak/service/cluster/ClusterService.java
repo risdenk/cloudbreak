@@ -42,7 +42,6 @@ import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.DatabaseVendor;
-import com.sequenceiq.cloudbreak.api.endpoint.v4.common.ResourceStatus;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.Status;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.database.base.DatabaseType;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.InstanceStatus;
@@ -629,11 +628,11 @@ public class ClusterService {
     }
 
     private void checkReattachSupportForGateways(Stack inTransactionStack, boolean repairWithReattach, Cluster cluster, HostMetadata hmd) {
-        boolean ambariRdsPresent = cluster.getRdsConfigs().stream()
-                .anyMatch(rdsConfig -> "AMBARI".equals(rdsConfig.getType()) && ResourceStatus.USER_MANAGED.equals(rdsConfig.getStatus()));
+        boolean clusterManagerRdsPresent = cluster.getRdsConfigs().stream()
+                .anyMatch(rdsConfig -> ("AMBARI".equals(rdsConfig.getType()) || "CLOUDERA_MANAGER".equals(rdsConfig.getType())));
         boolean singleNodeGateway = isGateway(hmd) && !isMultipleGateway(inTransactionStack);
-        if (repairWithReattach && !ambariRdsPresent && singleNodeGateway) {
-            throw new BadRequestException("Repair with disk reattach not supported on single node gateway without external Ambari RDS.");
+        if (repairWithReattach && !clusterManagerRdsPresent && singleNodeGateway) {
+            throw new BadRequestException("Repair with disk reattach not supported on single node gateway without external cluster manager RDS.");
         }
     }
 

@@ -20,12 +20,17 @@ import org.springframework.stereotype.Service;
 
 import com.cloudera.api.swagger.ClustersResourceApi;
 import com.cloudera.api.swagger.HostTemplatesResourceApi;
+import com.cloudera.api.swagger.HostsResourceApi;
+import com.cloudera.api.swagger.ServicesResourceApi;
 import com.cloudera.api.swagger.client.ApiClient;
 import com.cloudera.api.swagger.client.ApiException;
 import com.cloudera.api.swagger.model.ApiCommand;
 import com.cloudera.api.swagger.model.ApiHost;
 import com.cloudera.api.swagger.model.ApiHostRef;
 import com.cloudera.api.swagger.model.ApiHostRefList;
+import com.cloudera.api.swagger.model.ApiService;
+import com.cloudera.api.swagger.model.ApiServiceState;
+import com.google.common.collect.Maps;
 import com.sequenceiq.cloudbreak.client.HttpClientConfig;
 import com.sequenceiq.cloudbreak.cloud.model.component.StackRepoDetails;
 import com.sequenceiq.cloudbreak.cloud.scheduler.CancellationException;
@@ -49,6 +54,8 @@ public class ClouderaManagerModificationService implements ClusterModificationSe
     private static final Logger LOGGER = LoggerFactory.getLogger(ClouderaManagerModificationService.class);
 
     private static final Boolean START_ROLES_ON_UPSCALED_NODES = Boolean.TRUE;
+
+    private static final String FULL_VIEW = "FULL";
 
     @Inject
     private ClouderaManagerClientFactory clouderaManagerClientFactory;
@@ -232,17 +239,45 @@ public class ClouderaManagerModificationService implements ClusterModificationSe
 
     @Override
     public Map<String, String> gatherInstalledComponents(String hostname) {
+        HostsResourceApi hostsResourceApi = clouderaManagerClientFactory.getHostsResourceApi(client);
+        try {
+            Map<String, String> result = Maps.newHashMap();
+            hostsResourceApi.readHosts(FULL_VIEW).getItems().stream()
+                    .filter(host -> host.getHostname().contentEquals(hostname))
+                    .findFirst().get().getRoleRefs().stream()
+                    .forEach(roleRef -> result.put(roleRef.getServiceName(), "valami"));
+            return result;
+        } catch (ApiException e) {
+            // TODO
+        }
         return Map.of();
     }
 
     @Override
     public void stopComponents(Map<String, String> components, String hostname) {
-
+        ServicesResourceApi servicesResourceApi = clouderaManagerClientFactory.getServicesResourceApi(client);
+        components.keySet().stream().forEach(component -> {
+            try {
+                servicesResourceApi.stopCommand(stack.getName(), component);
+            } catch (ApiException e) {
+                // TODO
+            }
+        });
     }
 
     @Override
     public void ensureComponentsAreStopped(Map<String, String> components, String hostname) {
-
+        ServicesResourceApi servicesResourceApi = clouderaManagerClientFactory.getServicesResourceApi(client);
+        components.keySet().stream().forEach(component -> {
+            try {
+                ApiService apiService = servicesResourceApi.readService(stack.getName(), component, FULL_VIEW);
+                if (!apiService.getServiceState().equals(ApiServiceState.STOPPED)) {
+                    servicesResourceApi.stopCommand(stack.getName(), component);
+                }
+            } catch (ApiException e) {
+                // TODO
+            }
+        });
     }
 
     @Override
