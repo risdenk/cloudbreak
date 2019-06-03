@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sequenceiq.cloudbreak.client.HttpClientConfig;
 import com.sequenceiq.cloudbreak.cloud.model.ClouderaManagerProduct;
 import com.sequenceiq.cloudbreak.cloud.model.ClouderaManagerRepo;
+import com.sequenceiq.cloudbreak.cloud.model.Telemetry;
 import com.sequenceiq.cloudbreak.cloud.scheduler.CancellationException;
 import com.sequenceiq.cloudbreak.cluster.api.ClusterSetupService;
 import com.sequenceiq.cloudbreak.cluster.service.ClusterComponentConfigProvider;
@@ -117,7 +118,7 @@ public class ClouderaManagerSetupService implements ClusterSetupService {
 
     @Override
     public Cluster buildCluster(Map<HostGroup, List<InstanceMetaData>> instanceMetaDataByHostGroup, TemplatePreparationObject templatePreparationObject,
-            Set<HostMetadata> hostsInCluster, String sdxContext) {
+            Set<HostMetadata> hostsInCluster, String sdxContext, Telemetry telemetry) {
         Cluster cluster = stack.getCluster();
         Long clusterId = cluster.getId();
         try {
@@ -133,7 +134,7 @@ public class ClouderaManagerSetupService implements ClusterSetupService {
                 ApiHostRef cmHostRef = new ApiHostRef();
                 cmHostRef.setHostId(cmHost.getHostId());
                 cmHostRef.setHostname(cmHost.getHostname());
-                mgmtSetupService.setupMgmtServices(stack, client, cmHostRef, templatePreparationObject.getRdsConfigs());
+                mgmtSetupService.setupMgmtServices(stack, client, cmHostRef, templatePreparationObject.getRdsConfigs(), telemetry, sdxContext);
             } else {
                 LOGGER.warn("Unable to determine Cloudera Manager host. Skipping management services installation.");
             }

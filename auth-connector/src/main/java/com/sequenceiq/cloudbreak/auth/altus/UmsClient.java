@@ -2,12 +2,19 @@ package com.sequenceiq.cloudbreak.auth.altus;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.cloudera.thunderhead.service.usermanagement.UserManagementGrpc;
 import com.cloudera.thunderhead.service.usermanagement.UserManagementGrpc.UserManagementBlockingStub;
 import com.cloudera.thunderhead.service.usermanagement.UserManagementProto;
 import com.cloudera.thunderhead.service.usermanagement.UserManagementProto.Account;
+import com.cloudera.thunderhead.service.usermanagement.UserManagementProto.CreateAccessKeyRequest;
+import com.cloudera.thunderhead.service.usermanagement.UserManagementProto.CreateAccessKeyResponse;
 import com.cloudera.thunderhead.service.usermanagement.UserManagementProto.GetAccountRequest;
 import com.cloudera.thunderhead.service.usermanagement.UserManagementProto.GetUserRequest;
 import com.cloudera.thunderhead.service.usermanagement.UserManagementProto.ListMachineUsersRequest;
@@ -17,12 +24,16 @@ import com.cloudera.thunderhead.service.usermanagement.UserManagementProto.User;
 import com.sequenceiq.cloudbreak.auth.altus.exception.UmsAuthenticationException;
 
 import io.grpc.ManagedChannel;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 
 /**
  * A simple wrapper to the GRPC user management service. This handles setting up
  * the appropriate context-propogatinng interceptors and hides some boilerplate.
  */
 public class UmsClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UmsClient.class);
 
     private final ManagedChannel channel;
 
@@ -80,17 +91,74 @@ public class UmsClient {
     }
 
     public MachineUser getMachineUser(String requestId, String userCrn) {
+        return getMachineUserForUser(requestId, userCrn, userCrn);
+    }
+
+    public MachineUser getMachineUserForUser(String requestId, String userCrn, String machineUserName) {
         checkNotNull(requestId);
         checkNotNull(userCrn);
         Crn crn = Crn.fromString(userCrn);
         List<MachineUser> machineUsers = newStub(requestId).listMachineUsers(
                 ListMachineUsersRequest.newBuilder()
                         .setAccountId(Crn.fromString(userCrn).getAccountId())
-                        .addMachineUserNameOrCrn(userCrn)
+                        .addMachineUserNameOrCrn(machineUserName)
                         .build()
         ).getMachineUserList();
         checkSingleUserResponse(machineUsers, crn.getResource());
         return machineUsers.get(0);
+    }
+
+    /**
+     * Create new machine user - only if it does not exist
+     * @param requestId id of the request
+     * @param userCrn actor useridentifier
+     * @param machineUserName machine user name that will be created
+     */
+    public void createMachineUser(String requestId, String userCrn, String machineUserName) {
+        checkNotNull(requestId);
+        checkNotNull(userCrn);
+        checkNotNull(machineUserName);
+        try {
+            UserManagementProto.CreateMachineUserResponse response = newStub(requestId).createMachineUser(
+                    UserManagementProto.CreateMachineUserRequest.newBuilder()
+                            .setAccountId(Crn.fromString(userCrn).getAccountId())
+                            .setMachineUserName(machineUserName)
+                            .build());
+            LOGGER.info("Machine user created: {}.", response.getMachineUser().getCrn());
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus().getCode().equals(
+                    io.grpc.Status.ALREADY_EXISTS.getCode())) {
+                LOGGER.info("Machine user already exists.");
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Remove machine user
+     * @param requestId id of the request
+     * @param userCrn actor identifier
+     * @param machineUserName machine user to remove
+     */
+    public void deleteMachineUser(String requestId, String userCrn, String machineUserName) {
+        checkNotNull(requestId);
+        checkNotNull(userCrn);
+        checkNotNull(machineUserName);
+        try {
+            newStub(requestId).deleteMachineUser(
+                    UserManagementProto.DeleteMachineUserRequest.newBuilder()
+                            .setAccountId(Crn.fromString(userCrn).getAccountId())
+                            .setMachineUserNameOrCrn(machineUserName)
+                            .build());
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus().getCode().equals(
+                    Status.NOT_FOUND.getCode())) {
+                LOGGER.info("Machine user not found.");
+            } else {
+                throw e;
+            }
+        }
     }
 
     private <T> void checkSingleUserResponse(List<T> users, String crnResource) {
@@ -121,6 +189,79 @@ public class UmsClient {
                 .setResourceCrn(resourceCrn)
                 .setResourceRoleCrn(resourceRoleCrn)
                 .build());
+    }
+
+    /**
+     * Add a role (to machine user) - if role does not exist
+     *
+     * @param requestId      id of the request
+     * @param userCrn        actor user (account & assignee)
+     * @param machineUserCrn machine user identifier
+     * @param roleCrn        role identifier
+     */
+    public void assignMachineUserRole(String requestId, String userCrn, String machineUserCrn, String roleCrn) {
+        checkNotNull(requestId);
+        checkNotNull(userCrn);
+        checkNotNull(machineUserCrn);
+        checkNotNull(roleCrn);
+        try {
+            newStub(requestId).assignRole(
+                    UserManagementProto.AssignRoleRequest.newBuilder()
+                            .setActor(UserManagementProto.Actor.newBuilder()
+                                    .setAccountId(Crn.fromString(userCrn).getAccountId())
+                                    .setMachineUserNameOrCrn(machineUserCrn)
+                                    .build())
+                            .setAssignee(UserManagementProto.Assignee.newBuilder()
+                                    .setAccountId(Crn.fromString(userCrn).getAccountId())
+                                    .setMachineUserNameOrCrn(machineUserCrn)
+                                    .build())
+                            .setRoleNameOrCrn(roleCrn)
+                            .build());
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus().getCode().equals(
+                    Status.ALREADY_EXISTS.getCode())) {
+                LOGGER.info("Role ({}) for machine user ({}) already assigned.", roleCrn, machineUserCrn);
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Remove a role (from machine user) - if role exists
+     * @param requestId id of the request
+     * @param userCrn actor user (account & assignee)
+     * @param machineUserCrn machine user identifier
+     * @param roleCrn role identifier
+     */
+    public void unassignMachineUserRole(String requestId, String userCrn, String machineUserCrn, String roleCrn) {
+        checkNotNull(requestId);
+        checkNotNull(userCrn);
+        checkNotNull(machineUserCrn);
+        checkNotNull(roleCrn);
+        try {
+            newStub(requestId).unassignRole(
+                    UserManagementProto.UnassignRoleRequest.newBuilder()
+                            .setActor(
+                                    UserManagementProto.Actor.newBuilder()
+                                            .setAccountId(Crn.fromString(userCrn).getAccountId())
+                                            .setMachineUserNameOrCrn(machineUserCrn)
+                                            .build())
+                            .setAssignee(
+                                    UserManagementProto.Assignee.newBuilder()
+                                            .setAccountId(Crn.fromString(userCrn).getAccountId())
+                                            .setMachineUserNameOrCrn(machineUserCrn)
+                                            .build())
+                            .setRoleNameOrCrn(roleCrn)
+                            .build());
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus().getCode().equals(
+                    Status.NOT_FOUND.getCode())) {
+                LOGGER.info("Cannot find role ({}) for machine user ({}).", roleCrn, machineUserCrn);
+            } else {
+                throw e;
+            }
+        }
     }
 
     public List<UserManagementProto.ResourceAssignment> listAssigmentsOfUser(String requestId, String userCrn) {
@@ -159,6 +300,98 @@ public class UmsClient {
                         .setAccountId(Crn.fromString(userCrn).getAccountId())
                         .build()
         ).getAccount();
+    }
+
+    /**
+     * Wraps a call to create an access private key pair
+     * @param requestId the request ID for the request
+     * @param userCrn the user CRN
+     * @param machineUserName the machine user name
+     * @return key creation response
+     */
+    CreateAccessKeyResponse createAccessPrivateKeyPair(String requestId, String userCrn, String machineUserName) {
+        checkNotNull(requestId);
+        checkNotNull(userCrn);
+        checkNotNull(machineUserName);
+        return newStub(requestId).createAccessKey(
+                CreateAccessKeyRequest.newBuilder()
+                        .setAccountId(Crn.fromString(userCrn).getAccountId())
+                        .setMachineUserNameOrCrn(machineUserName)
+                        .build());
+    }
+
+    /**
+     * Get a list of access key CRN (keys owned by a machine user)
+     * @param requestId id of the request
+     * @param userCrn actor that query the keys for the machine user
+     * @param machineUserName machine user that owns the access keys
+     * @return access key CRNs
+     */
+    public List<String> listMachineUserAccessKeys(String requestId, String userCrn, String machineUserName) {
+        checkNotNull(requestId);
+        checkNotNull(userCrn);
+        checkNotNull(machineUserName);
+        List<String> accessKeys = new ArrayList<>();
+        String accountId = Crn.fromString(userCrn).getAccountId();
+        UserManagementProto.ListAccessKeysRequest.Builder listAccessKeysRequestBuilder =
+                UserManagementProto.ListAccessKeysRequest.newBuilder()
+                        .setAccountId(accountId)
+                        .setKeyAssignee(UserManagementProto.Actor.newBuilder()
+                                .setAccountId(accountId)
+                                .setMachineUserNameOrCrn(machineUserName)
+                                .build());
+        do {
+            try {
+                UserManagementProto.ListAccessKeysResponse listAccessKeysResponse =
+                        newStub(requestId).listAccessKeys(listAccessKeysRequestBuilder.build());
+                accessKeys.addAll(
+                        listAccessKeysResponse.getAccessKeyList().stream()
+                                .map(UserManagementProto.AccessKey::getCrn)
+                                .collect(Collectors.toList()));
+                if (!listAccessKeysResponse.hasNextPageToken()) {
+                    break;
+                }
+                listAccessKeysRequestBuilder.setPageToken(
+                        listAccessKeysResponse.getNextPageToken());
+            } catch (StatusRuntimeException e) {
+                if (e.getStatus().getCode().equals(io.grpc.Status.NOT_FOUND.getCode())) {
+                    LOGGER.info("Machine user does not exist. Cannot list access keys.");
+                    break;
+                } else {
+                    throw e;
+                }
+            }
+        } while (true);
+        LOGGER.info("Found {} access keys for the machine user {}", accessKeys.size(), machineUserName);
+        return accessKeys;
+    }
+
+    /**
+     * Delete access keys identified by CRNs
+     * @param requestId id of the request
+     * @param accessKeyCrns list of access key CRNs
+     * @param actorCrn user that executes the deletion
+     */
+    void deleteAccessKeys(String requestId, List<String> accessKeyCrns, String actorCrn) {
+        checkNotNull(requestId);
+        checkNotNull(actorCrn);
+        checkNotNull(accessKeyCrns);
+        accessKeyCrns.forEach(accessKeyCrn -> {
+            try {
+                LOGGER.info("Deleting access key {}...", accessKeyCrn);
+                newStub(requestId).deleteAccessKey(UserManagementProto.DeleteAccessKeyRequest.newBuilder()
+                        .setAccountId(Crn.fromString(actorCrn).getAccountId())
+                        .setAccessKeyIdOrCrn(accessKeyCrn)
+                        .build());
+                LOGGER.info("Access key {} deleted.", accessKeyCrn);
+            } catch (StatusRuntimeException e) {
+                if (e.getStatus().getCode().equals(io.grpc.Status.NOT_FOUND.getCode())) {
+                    LOGGER.info("Access key {} does not exist.", accessKeyCrn);
+                } else {
+                    throw e;
+                }
+            }
+        });
     }
 
     /**
