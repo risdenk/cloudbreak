@@ -60,7 +60,7 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
         initializeDefaultBlueprints(testContext);
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "Create datalake cluster and then delete",
             when = "create cluster and if available then delete",
@@ -75,7 +75,6 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
                 .when(environmentTestClient.createV4())
                 .given(ClusterTestDto.class).valid()
                 .withRdsConfigNames(rdsList)
-                .withLdapConfigName(testContext.get(LdapTestDto.class).getName())
                 .withKerberos(testContext.get(KerberosTestDto.class).getName())
                 .given("placement", PlacementSettingsTestDto.class)
 
@@ -94,7 +93,7 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "Create datalake cluster and then delete resources",
             when = "create cluster and then delete resources",
@@ -110,7 +109,6 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
                 .when(environmentTestClient.createV4())
                 .given(ClusterTestDto.class).valid()
                 .withRdsConfigNames(rdsList)
-                .withLdapConfigName(testContext.get(LdapTestDto.class).getName())
                 .given("placement", PlacementSettingsTestDto.class)
                 .given(StackTestDto.class).withPlacement("placement")
                 .withEnvironment(EnvironmentTestDto.class)
@@ -123,7 +121,7 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "Create two datalake cluster in one environment",
             when = "create cluster called twice",
@@ -139,7 +137,7 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
         createDatalake(testContext, rdsList);
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "Create datalake cluster in one environment and change credential in environment",
             when = "call create cluster and change credential",
@@ -164,7 +162,7 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "Create datalake cluster and workload",
             when = "call create cluster with datalake and wiht workload config",
@@ -190,7 +188,6 @@ public class EnvironmentDatalakeClusterTest extends AbstractIntegrationTest {
         testContext.given("placement", PlacementSettingsTestDto.class)
                 .given(ClusterTestDto.class).valid()
                 .withRdsConfigNames(rdsList)
-                .withLdapConfigName(testContext.get(LdapTestDto.class).getName())
                 .given(StackTestDto.class)
                 .withName(resourcePropertyProvider().getName())
                 .withPlacement("placement")

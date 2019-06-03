@@ -20,14 +20,12 @@ import com.sequenceiq.cloudbreak.TestUtil;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.cluster.ClusterV4Request;
 import com.sequenceiq.cloudbreak.common.json.Json;
 import com.sequenceiq.cloudbreak.controller.validation.ValidationResult;
-import com.sequenceiq.cloudbreak.domain.LdapConfig;
-import com.sequenceiq.cloudbreak.dto.ProxyConfig;
 import com.sequenceiq.cloudbreak.domain.RDSConfig;
 import com.sequenceiq.cloudbreak.domain.environment.Region;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.view.EnvironmentView;
+import com.sequenceiq.cloudbreak.dto.ProxyConfig;
 import com.sequenceiq.cloudbreak.dto.ProxyConfig.ProxyConfigBuilder;
-import com.sequenceiq.cloudbreak.exception.NotFoundException;
 import com.sequenceiq.cloudbreak.service.CloudbreakServiceException;
 import com.sequenceiq.cloudbreak.service.kerberos.KerberosConfigService;
 import com.sequenceiq.cloudbreak.service.ldapconfig.LdapConfigService;
@@ -77,9 +75,6 @@ public class ClusterCreationEnvironmentValidatorTest {
         ClusterV4Request clusterRequest = new ClusterV4Request();
         ProxyConfig proxyConfig = createProxyConfig("proxy");
         clusterRequest.setProxyConfigCrn(proxyConfig.getName());
-        LdapConfig ldapConfig = createLdapConfig("ldap");
-        when(ldapConfigService.getByNameForWorkspaceId(ldapConfig.getName(), stack.getWorkspace().getId())).thenReturn(ldapConfig);
-        clusterRequest.setLdapName("ldap");
         // WHEN
         ValidationResult actualResult = underTest.validate(clusterRequest, stack, user);
         // THEN
@@ -93,9 +88,6 @@ public class ClusterCreationEnvironmentValidatorTest {
         ClusterV4Request clusterRequest = new ClusterV4Request();
         ProxyConfig proxyConfig = createProxyConfig("proxy");
         clusterRequest.setProxyConfigCrn(proxyConfig.getName());
-        LdapConfig ldapConfig = createLdapConfig("ldap");
-        when(ldapConfigService.getByNameForWorkspaceId(ldapConfig.getName(), stack.getWorkspace().getId())).thenReturn(ldapConfig);
-        clusterRequest.setLdapName("ldap");
         // WHEN
         ValidationResult actualResult = underTest.validate(clusterRequest, stack, user);
         // THEN
@@ -110,9 +102,6 @@ public class ClusterCreationEnvironmentValidatorTest {
         ClusterV4Request clusterRequest = new ClusterV4Request();
         ProxyConfig proxyConfig = createProxyConfig("proxy");
         clusterRequest.setProxyConfigCrn(proxyConfig.getName());
-        LdapConfig ldapConfig = createLdapConfig("ldap");
-        when(ldapConfigService.getByNameForWorkspaceId(ldapConfig.getName(), stack.getWorkspace().getId())).thenReturn(ldapConfig);
-        clusterRequest.setLdapName("ldap");
         // WHEN
         ValidationResult actualResult = underTest.validate(clusterRequest, stack, user);
         // THEN
@@ -130,9 +119,6 @@ public class ClusterCreationEnvironmentValidatorTest {
         ClusterV4Request clusterRequest = new ClusterV4Request();
         ProxyConfig proxyConfig = createProxyConfig("proxy");
         clusterRequest.setProxyConfigCrn(proxyConfig.getName());
-        LdapConfig ldapConfig = createLdapConfig("ldap");
-        when(ldapConfigService.getByNameForWorkspaceId(ldapConfig.getName(), stack.getWorkspace().getId())).thenReturn(ldapConfig);
-        clusterRequest.setLdapName("ldap");
         String rdsName = "anrds";
         RDSConfig rdsConfig = createRdsConfig(rdsName);
         when(rdsConfigService.getByNamesForWorkspaceId(Set.of(rdsConfig.getName()), stack.getWorkspace().getId())).thenReturn(Set.of(rdsConfig));
@@ -152,9 +138,6 @@ public class ClusterCreationEnvironmentValidatorTest {
         ProxyConfig proxyConfig = createProxyConfig("proxy");
         clusterRequest.setProxyConfigCrn(proxyConfig.getName());
         when(proxyConfigDtoService.get(anyString(), anyString(), anyString())).thenThrow(new CloudbreakServiceException("Some reason"));
-        LdapConfig ldapConfig = createLdapConfig("ldap");
-        when(ldapConfigService.getByNameForWorkspaceId(ldapConfig.getName(), stack.getWorkspace().getId())).thenReturn(ldapConfig);
-        clusterRequest.setLdapName("ldap");
         String rdsName = "anrds";
         RDSConfig rdsConfig = createRdsConfig(rdsName);
         when(rdsConfigService.getByNamesForWorkspaceId(Set.of(rdsConfig.getName()), stack.getWorkspace().getId())).thenReturn(Set.of(rdsConfig));
@@ -170,30 +153,6 @@ public class ClusterCreationEnvironmentValidatorTest {
     }
 
     @Test
-    public void testValidateShouldFailWhenLdapCouldNotBeFoundInTheSameWorkspace() throws IOException {
-        // GIVEN
-        Stack stack = getStack();
-        stack.setEnvironment(null);
-        ClusterV4Request clusterRequest = new ClusterV4Request();
-        ProxyConfig proxyConfig = createProxyConfig("proxy");
-        clusterRequest.setProxyConfigCrn(proxyConfig.getName());
-        LdapConfig ldapConfig = createLdapConfig("ldap");
-        when(ldapConfigService.getByNameForWorkspaceId(ldapConfig.getName(), stack.getWorkspace().getId())).thenThrow(new NotFoundException(""));
-        clusterRequest.setLdapName("ldap");
-        String rdsName = "anrds";
-        RDSConfig rdsConfig = createRdsConfig(rdsName);
-        when(rdsConfigService.getByNamesForWorkspaceId(Set.of(rdsConfig.getName()), stack.getWorkspace().getId())).thenReturn(Set.of(rdsConfig));
-        clusterRequest.setDatabases(Set.of(rdsName));
-        // WHEN
-        ValidationResult actualResult = underTest.validate(clusterRequest, stack, user);
-        // THEN
-        assertTrue(actualResult.hasError());
-        Assert.assertEquals(1, actualResult.getErrors().size());
-        Assert.assertEquals("Stack cannot use 'ldap' LdapConfig resource which doesn't exist in the same workspace.",
-                actualResult.getErrors().get(0));
-    }
-
-    @Test
     public void testValidateShouldFailWhenRdsCouldNotBeFoundInTheSameWorkspace() throws IOException {
         // GIVEN
         Stack stack = getStack();
@@ -201,9 +160,6 @@ public class ClusterCreationEnvironmentValidatorTest {
         ClusterV4Request clusterRequest = new ClusterV4Request();
         ProxyConfig proxyConfig = createProxyConfig("proxy");
         clusterRequest.setProxyConfigCrn(proxyConfig.getName());
-        LdapConfig ldapConfig = createLdapConfig("ldap");
-        when(ldapConfigService.getByNameForWorkspaceId(ldapConfig.getName(), stack.getWorkspace().getId())).thenReturn(ldapConfig);
-        clusterRequest.setLdapName("ldap");
         String rdsName = "anrds";
         String rdsName2 = "aSecondrds";
         when(rdsConfigService.getByNamesForWorkspaceId(Set.of(rdsName, rdsName2), stack.getWorkspace().getId())).thenReturn(Set.of());
@@ -235,13 +191,6 @@ public class ClusterCreationEnvironmentValidatorTest {
         environmentView.setRegions(new Json(Set.of(region1, region2)));
         stack.setEnvironment(environmentView);
         return stack;
-    }
-
-    private LdapConfig createLdapConfig(String name) {
-        LdapConfig ldapConfig = new LdapConfig();
-        ldapConfig.setId(TestUtil.generateUniqueId());
-        ldapConfig.setName(name);
-        return ldapConfig;
     }
 
     private ProxyConfig createProxyConfig(String name) {

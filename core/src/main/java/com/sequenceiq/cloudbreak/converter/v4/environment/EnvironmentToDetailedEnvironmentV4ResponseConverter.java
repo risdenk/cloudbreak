@@ -82,9 +82,6 @@ public class EnvironmentToDetailedEnvironmentV4ResponseConverter extends Abstrac
             datalakeResourcesNames.add(datalakeResources.getName());
             DatalakeResourcesV4Response datalakeResourcesResponse = new DatalakeResourcesV4Response();
             datalakeResourcesResponse.setAmbariUrl(datalakeResources.getDatalakeAmbariUrl());
-            if (datalakeResources.getLdapConfig() != null) {
-                datalakeResourcesResponse.setLdapName(datalakeResources.getLdapConfig().getName());
-            }
             if (datalakeResources.getKerberosConfig() != null) {
                 datalakeResourcesResponse.setKerberosName(datalakeResources.getKerberosConfig().getName());
             }

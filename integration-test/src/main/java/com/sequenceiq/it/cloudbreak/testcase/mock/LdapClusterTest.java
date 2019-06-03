@@ -30,7 +30,7 @@ public class LdapClusterTest extends AbstractIntegrationTest {
     @Inject
     private StackTestClient stackTestClient;
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "a valid cluster request with ldap configuration",
             when = "calling create cluster",
@@ -45,7 +45,6 @@ public class LdapClusterTest extends AbstractIntegrationTest {
         testContext.given(LdapTestDto.class)
                 .when(ldapTestClient.createV4())
                 .given(ClusterTestDto.class)
-                .withLdapConfig()
                 .given(StackTestDto.class)
                 .withCluster()
                 .when(stackTestClient.createV4())
@@ -53,7 +52,7 @@ public class LdapClusterTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "a valid cluster request with ldap configuration",
             when = "calling create cluster and then delete the attached ldap",
@@ -66,7 +65,6 @@ public class LdapClusterTest extends AbstractIntegrationTest {
         testContext.given(LdapTestDto.class).withName(ldapName)
                 .when(ldapTestClient.createV4())
                 .given(ClusterTestDto.class)
-                .withLdapConfig()
                 .given(StackTestDto.class)
                 .withCluster()
                 .withName(stackName)

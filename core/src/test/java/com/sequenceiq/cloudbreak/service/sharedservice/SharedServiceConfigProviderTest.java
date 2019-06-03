@@ -114,7 +114,6 @@ public class SharedServiceConfigProviderTest {
         Assert.assertEquals(cluster, result);
         verify(datalakeResourcesService, times(0)).findById(anyLong());
         verify(kerberosConfigProvider, times(0)).setKerberosConfigForWorkloadCluster(any(Cluster.class), any(DatalakeResources.class));
-        assertNull(cluster.getLdapConfig());
         assertNull(cluster.getKerberosConfig());
         assertNull(cluster.getRdsConfigs());
     }
@@ -123,7 +122,6 @@ public class SharedServiceConfigProviderTest {
     public void testConfigureClusterWithDl() {
         Cluster requestedCluster = createBarelyConfiguredRequestedCluster();
         DatalakeResources datalakeResources = new DatalakeResources();
-        datalakeResources.setLdapConfig(ldapConfig);
 
         when(publicStack.getId()).thenReturn(TEST_LONG_VALUE);
         when(publicStackCluster.getId()).thenReturn(TEST_LONG_VALUE);
@@ -132,7 +130,6 @@ public class SharedServiceConfigProviderTest {
 
         Cluster result = underTest.configureCluster(requestedCluster, user, workspace);
 
-        Assert.assertEquals(ldapConfig, result.getLdapConfig());
         Assert.assertTrue(result.getRdsConfigs().isEmpty());
         verify(datalakeResourcesService, times(1)).findById(anyLong());
         verify(kerberosConfigProvider, times(1)).setKerberosConfigForWorkloadCluster(requestedCluster, datalakeResources);

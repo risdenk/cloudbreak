@@ -46,6 +46,7 @@ import com.sequenceiq.cloudbreak.domain.Blueprint;
 import com.sequenceiq.cloudbreak.domain.Credential;
 import com.sequenceiq.cloudbreak.domain.PlatformResourceRequest;
 import com.sequenceiq.cloudbreak.domain.RDSConfig;
+import com.sequenceiq.cloudbreak.ldap.LdapConfigService;
 import com.sequenceiq.cloudbreak.service.CloudbreakRestRequestThreadLocalService;
 import com.sequenceiq.cloudbreak.service.blueprint.BlueprintService;
 import com.sequenceiq.cloudbreak.service.credential.CredentialService;
@@ -108,6 +109,9 @@ public class StackV4RequestValidatorTest extends StackRequestValidatorTestBase {
 
     @Mock
     private CloudRegions cloudRegions;
+
+    @Mock
+    private LdapConfigService ldapConfigService;
 
     public StackV4RequestValidatorTest() {
         super(LoggerFactory.getLogger(StackV4RequestValidatorTest.class));
@@ -234,7 +238,6 @@ public class StackV4RequestValidatorTest extends StackRequestValidatorTestBase {
         request.getCluster().setDatabases(Set.of(TEST_RANGER_RDS_NAME, TEST_HIVE_RDS_NAME));
         when(rdsConfigService.getByNameForWorkspaceId(TEST_RANGER_RDS_NAME, WORKSPACE_ID)).thenReturn(rdsConfig(RANGER));
         when(rdsConfigService.getByNameForWorkspaceId(TEST_HIVE_RDS_NAME, WORKSPACE_ID)).thenReturn(rdsConfig(HIVE));
-
         ValidationResult validationResult = underTest.validate(request);
 
         assertEquals(1L, validationResult.getErrors().size());
@@ -254,7 +257,6 @@ public class StackV4RequestValidatorTest extends StackRequestValidatorTestBase {
         when(blueprintService.isDatalakeBlueprint(any())).thenReturn(true);
         StackV4Request request = stackRequest();
         request.getCluster().setDatabases(Set.of(TEST_RANGER_RDS_NAME, TEST_HIVE_RDS_NAME));
-        request.getCluster().setLdapName(TEST_LDAP_NAME);
         when(rdsConfigService.getByNameForWorkspaceId(TEST_RANGER_RDS_NAME, WORKSPACE_ID)).thenReturn(rdsConfig(RANGER));
         when(rdsConfigService.getByNameForWorkspaceId(TEST_HIVE_RDS_NAME, WORKSPACE_ID)).thenReturn(rdsConfig(HIVE));
 
@@ -274,7 +276,6 @@ public class StackV4RequestValidatorTest extends StackRequestValidatorTestBase {
         when(blueprintService.isDatalakeBlueprint(any())).thenReturn(true);
         StackV4Request request = stackRequest();
         request.getCluster().setDatabases(Set.of(TEST_RANGER_RDS_NAME, TEST_HIVE_RDS_NAME));
-        request.getCluster().setLdapName(TEST_LDAP_NAME);
         when(rdsConfigService.getByNameForWorkspaceId(TEST_RANGER_RDS_NAME, WORKSPACE_ID)).thenReturn(rdsConfig(RANGER));
         when(rdsConfigService.getByNameForWorkspaceId(TEST_HIVE_RDS_NAME, WORKSPACE_ID)).thenReturn(rdsConfig(HIVE));
 
@@ -294,7 +295,6 @@ public class StackV4RequestValidatorTest extends StackRequestValidatorTestBase {
         when(blueprintService.isAmbariBlueprint(any(Blueprint.class))).thenReturn(true);
         StackV4Request request = stackRequest();
         request.getCluster().setDatabases(Collections.emptySet());
-        request.getCluster().setLdapName(null);
 
         ValidationResult validationResult = underTest.validate(request);
 

@@ -59,7 +59,7 @@ public class EnvironmentClusterTest extends AbstractIntegrationTest {
         initializeDefaultBlueprints(testContext);
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "there is an environment with a attached shared resources and a running cluster that is using these resources",
             when = "the resource delete endpoints and environment delete endpoints are called",
@@ -188,9 +188,6 @@ public class EnvironmentClusterTest extends AbstractIntegrationTest {
             Set<String> rdsSet = new LinkedHashSet<>();
             rdsSet.add(rdsName);
             cluster.withRdsConfigNames(rdsSet);
-        }
-        if (ldapName != null) {
-            cluster.withLdapConfigName(ldapName);
         }
         return cluster;
     }

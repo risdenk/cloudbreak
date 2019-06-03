@@ -36,6 +36,7 @@ import com.sequenceiq.cloudbreak.domain.PlatformResourceRequest;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.DatalakeResources;
+import com.sequenceiq.cloudbreak.ldap.LdapConfigService;
 import com.sequenceiq.cloudbreak.service.CloudbreakRestRequestThreadLocalService;
 import com.sequenceiq.cloudbreak.service.blueprint.BlueprintService;
 import com.sequenceiq.cloudbreak.service.cluster.ClusterService;
@@ -82,6 +83,9 @@ public class StackV4RequestValidator implements Validator<StackV4Request> {
 
     @Inject
     private EnvironmentService environmentService;
+
+    @Inject
+    private LdapConfigService ldapConfigService;
 
     @Override
     public ValidationResult validate(StackV4Request subject) {
@@ -205,7 +209,7 @@ public class StackV4RequestValidator implements Validator<StackV4Request> {
                 if (!databaseTypes.contains(DatabaseType.RANGER.name())) {
                     validationBuilder.error(String.format(rdsErrorMessageFormat, "Ranger"));
                 }
-                if (isLdapNotProvided(clusterRequest)) {
+                if (isLdapNotProvided(stackRequest.getEnvironment().getName())) {
                     validationBuilder.error("For a Datalake cluster (since you have selected a datalake ready blueprint) you should provide an "
                             + "LDAP configuration or its name/id to the Cluster request");
                 }
@@ -213,8 +217,8 @@ public class StackV4RequestValidator implements Validator<StackV4Request> {
         }
     }
 
-    private boolean isLdapNotProvided(ClusterV4Request clusterRequest) {
-        return clusterRequest.getLdapName() == null;
+    private boolean isLdapNotProvided(String environmentCrn) {
+        return !ldapConfigService.isLdapConfigExistsForEnvironment(environmentCrn);
     }
 
     private Set<String> getGivenRdsTypes(ClusterV4Request clusterRequest, Long workspaceId) {

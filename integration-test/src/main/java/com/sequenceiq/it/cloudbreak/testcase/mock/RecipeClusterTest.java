@@ -144,7 +144,7 @@ public class RecipeClusterTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "a created cluster with post ambari install recipe and ldap attached to the cluster",
             when = "creating cluster",
@@ -158,7 +158,6 @@ public class RecipeClusterTest extends AbstractIntegrationTest {
                 .withName(ldapName)
                 .when(ldapTestClient.createV4())
                 .given(ClusterTestDto.class)
-                .withLdapConfigName(ldapName)
                 .given(StackTestDto.class)
                 .when(stackTestClient.createV4())
                 .await(STACK_AVAILABLE)

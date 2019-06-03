@@ -9,6 +9,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,13 +44,15 @@ import com.sequenceiq.cloudbreak.converter.StackToTemplatePreparationObjectConve
 import com.sequenceiq.cloudbreak.core.bootstrap.service.container.postgres.PostgresConfigService;
 import com.sequenceiq.cloudbreak.domain.Blueprint;
 import com.sequenceiq.cloudbreak.domain.FileSystem;
-import com.sequenceiq.cloudbreak.domain.LdapConfig;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.DatalakeResources;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.gateway.Gateway;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.host.HostGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
+import com.sequenceiq.cloudbreak.domain.view.EnvironmentView;
+import com.sequenceiq.cloudbreak.dto.LdapView;
+import com.sequenceiq.cloudbreak.ldap.LdapConfigService;
 import com.sequenceiq.cloudbreak.service.CloudbreakServiceException;
 import com.sequenceiq.cloudbreak.service.blueprint.BlueprintViewProvider;
 import com.sequenceiq.cloudbreak.service.cluster.ClusterService;
@@ -144,11 +147,17 @@ public class StackToTemplatePreparationObjectConverterTest {
     @Mock
     private DatalakeResourcesService datalakeResourcesService;
 
+    @Mock
+    private LdapConfigService ldapConfigService;
+
     @Before
     public void setUp() throws IOException {
         MockitoAnnotations.initMocks(this);
         when(clusterService.getById(any(Long.class))).thenReturn(cluster);
         when(source.getCluster()).thenReturn(sourceCluster);
+        EnvironmentView environmentView = new EnvironmentView();
+        environmentView.setName("env");
+        when(source.getEnvironment()).thenReturn(environmentView);
         when(sourceCluster.getId()).thenReturn(TEST_CLUSTER_ID);
         when(cluster.getId()).thenReturn(TEST_CLUSTER_ID);
         when(clusterComponentConfigProvider.getHDPRepo(TEST_CLUSTER_ID)).thenReturn(stackRepoDetails);
@@ -158,6 +167,7 @@ public class StackToTemplatePreparationObjectConverterTest {
         when(source.getInputs()).thenReturn(stackInputs);
         when(stackInputs.get(StackInputs.class)).thenReturn(null);
         when(stackInfoService.blueprintStackInfo(TEST_BLUEPRINT_TEXT)).thenReturn(blueprintStackInfo);
+        when(ldapConfigService.get(anyString())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -174,7 +184,6 @@ public class StackToTemplatePreparationObjectConverterTest {
     @Test
     public void testConvertWhenClusterDoesNotGivesAGatewayThenNullShouldBeStored() {
         when(cluster.getGateway()).thenReturn(null);
-
         TemplatePreparationObject result = underTest.convert(source);
 
         assertNull(result.getGatewayView());
@@ -230,10 +239,8 @@ public class StackToTemplatePreparationObjectConverterTest {
 
     @Test
     public void testConvertWhenClusterFromClusterServiceHasLdapConfigThenItShouldBeStored() {
-        LdapConfig ldapConfig = new LdapConfig();
-        ldapConfig.setProtocol("");
-        ldapConfig.setBindDn("admin<>");
-        when(cluster.getLdapConfig()).thenReturn(ldapConfig);
+        LdapView ldapView = LdapView.LdapViewBuilder.aLdapView().withProtocol("").withBindDn("admin<>").build();
+        when(ldapConfigService.get(anyString())).thenReturn(Optional.of(ldapView));
 
         TemplatePreparationObject result = underTest.convert(source);
 
@@ -242,10 +249,7 @@ public class StackToTemplatePreparationObjectConverterTest {
 
     @Test
     public void testConvertWhenClusterFromClusterServiceHasNoLdapConfigThenTheOptionalShouldBeEmpty() {
-        when(cluster.getLdapConfig()).thenReturn(null);
-
         TemplatePreparationObject result = underTest.convert(source);
-
         assertFalse(result.getLdapConfig().isPresent());
     }
 

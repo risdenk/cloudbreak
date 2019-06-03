@@ -50,7 +50,6 @@ import com.sequenceiq.cloudbreak.controller.validation.environment.EnvironmentRe
 import com.sequenceiq.cloudbreak.converter.v4.environment.network.EnvironmentNetworkConverter;
 import com.sequenceiq.cloudbreak.domain.Credential;
 import com.sequenceiq.cloudbreak.domain.KerberosConfig;
-import com.sequenceiq.cloudbreak.domain.LdapConfig;
 import com.sequenceiq.cloudbreak.domain.PlatformResourceRequest;
 import com.sequenceiq.cloudbreak.domain.RDSConfig;
 import com.sequenceiq.cloudbreak.domain.environment.BaseNetwork;
@@ -68,7 +67,6 @@ import com.sequenceiq.cloudbreak.service.cluster.ClusterService;
 import com.sequenceiq.cloudbreak.service.credential.CredentialPrerequisiteService;
 import com.sequenceiq.cloudbreak.service.datalake.DatalakeResourcesService;
 import com.sequenceiq.cloudbreak.service.kerberos.KerberosConfigService;
-import com.sequenceiq.cloudbreak.service.ldapconfig.LdapConfigService;
 import com.sequenceiq.cloudbreak.service.platform.PlatformParameterService;
 import com.sequenceiq.cloudbreak.service.proxy.ProxyConfigDtoService;
 import com.sequenceiq.cloudbreak.service.rdsconfig.RdsConfigService;
@@ -90,9 +88,6 @@ public class EnvironmentService extends AbstractArchivistService<Environment> {
 
     @Inject
     private KubernetesConfigService kubernetesConfigService;
-
-    @Inject
-    private LdapConfigService ldapConfigService;
 
     @Inject
     private ProxyConfigDtoService proxyConfigDtoService;
@@ -368,8 +363,6 @@ public class EnvironmentService extends AbstractArchivistService<Environment> {
                     String datalakeAmbariUrl = (String) attributes.get(CredentialPrerequisiteService.CUMULUS_AMBARI_URL);
                     String datalakeAmbariUser = (String) attributes.get(CredentialPrerequisiteService.CUMULUS_AMBARI_USER);
                     String datalakeAmbariPassowrd = (String) attributes.get(CredentialPrerequisiteService.CUMULUS_AMBARI_PASSWORD);
-                    LdapConfig ldapConfig = isEmpty(registerDatalakeRequest.getLdapName()) ? null
-                            : ldapConfigService.getByNameForWorkspaceId(registerDatalakeRequest.getLdapName(), workspaceId);
                     KerberosConfig kerberosConfig = isEmpty(registerDatalakeRequest.getKerberosName()) ? null
                             : kerberosConfigService.getByNameForWorkspaceId(registerDatalakeRequest.getKerberosName(), workspaceId);
                     Set<RDSConfig> rdssConfigs = CollectionUtils.isEmpty(registerDatalakeRequest.getDatabaseNames()) ? null
@@ -381,7 +374,7 @@ public class EnvironmentService extends AbstractArchivistService<Environment> {
                             Map.entry(ServiceDescriptorDefinitionProvider.RANGER_ADMIN_PWD_KEY, registerDatalakeRequest.getRangerAdminPassword()))));
                     DatalakeConfigApi connector = datalakeConfigApiConnector.getConnector(ambariUrl, datalakeAmbariUser, datalakeAmbariPassowrd);
                     DatalakeResources datalakeResources = ambariDatalakeConfigProvider.collectAndStoreDatalakeResources(environmentName, envView,
-                            datalakeAmbariUrl, ambariUrl.getHost(), ambariUrl.getHost(), connector, serviceSecretParamMap, ldapConfig, kerberosConfig,
+                            datalakeAmbariUrl, ambariUrl.getHost(), ambariUrl.getHost(), connector, serviceSecretParamMap, kerberosConfig,
                             rdssConfigs, environment.getWorkspace());
                     environment.getDatalakeResources().add(datalakeResources);
                     return conversionService.convert(environmentRepository.save(environment), DetailedEnvironmentV4Response.class);

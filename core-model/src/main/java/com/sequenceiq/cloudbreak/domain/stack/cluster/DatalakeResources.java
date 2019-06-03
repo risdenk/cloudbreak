@@ -21,7 +21,6 @@ import com.sequenceiq.cloudbreak.common.json.Json;
 import com.sequenceiq.cloudbreak.common.json.JsonStringSetUtils;
 import com.sequenceiq.cloudbreak.common.json.JsonToString;
 import com.sequenceiq.cloudbreak.domain.KerberosConfig;
-import com.sequenceiq.cloudbreak.domain.LdapConfig;
 import com.sequenceiq.cloudbreak.domain.ProvisionEntity;
 import com.sequenceiq.cloudbreak.domain.RDSConfig;
 import com.sequenceiq.cloudbreak.domain.view.EnvironmentView;
@@ -60,9 +59,6 @@ public class DatalakeResources implements ProvisionEntity, WorkspaceAwareResourc
 
     @ManyToMany(cascade = CascadeType.MERGE)
     private Set<RDSConfig> rdsConfigs;
-
-    @ManyToOne
-    private LdapConfig ldapConfig;
 
     @ManyToOne
     private KerberosConfig kerberosConfig;
@@ -165,14 +161,6 @@ public class DatalakeResources implements ProvisionEntity, WorkspaceAwareResourc
 
     public void setRdsConfigs(Set<RDSConfig> rdsConfigs) {
         this.rdsConfigs = rdsConfigs;
-    }
-
-    public LdapConfig getLdapConfig() {
-        return ldapConfig;
-    }
-
-    public void setLdapConfig(LdapConfig ldapConfig) {
-        this.ldapConfig = ldapConfig;
     }
 
     public KerberosConfig getKerberosConfig() {

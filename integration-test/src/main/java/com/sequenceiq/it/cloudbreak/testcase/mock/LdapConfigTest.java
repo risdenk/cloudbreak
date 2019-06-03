@@ -24,7 +24,7 @@ public class LdapConfigTest extends AbstractIntegrationTest {
     @Inject
     private LdapTestClient ldapTestClient;
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "a valid ldap request",
             when = "calling create ldap",
@@ -44,7 +44,7 @@ public class LdapConfigTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "a valid active directory request",
             when = "calling create ldap",
@@ -138,7 +138,7 @@ public class LdapConfigTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "a valid ldap request",
             when = "calling create ldap and delete and create again with the same name",
@@ -160,7 +160,7 @@ public class LdapConfigTest extends AbstractIntegrationTest {
                 .validate();
     }
 
-    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
+    @Test(dataProvider = TEST_CONTEXT_WITH_MOCK, enabled = false)
     @Description(
             given = "a valid ldap request",
             when = "calling create ldap and create again with the same name",
