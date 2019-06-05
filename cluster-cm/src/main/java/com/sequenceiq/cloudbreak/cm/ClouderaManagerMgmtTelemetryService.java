@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.joining;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -61,11 +62,17 @@ public class ClouderaManagerMgmtTelemetryService {
     // Telemetry publisher - Safety valve settings
     private static final String DATABUS_HEADER_SDX_ID = "databus.header.sdx.id";
 
+    private static final String DATABUS_HEADER_SDX_NAME = "databus.header.sdx.name";
+
     private static final String TELEMETRY_WA_CLUSTER_TYPE_HEADER = "cluster.type";
 
     private static final String TELEMETRY_UPLOAD_LOGS = "telemetry.upload.job.logs";
 
     private static final String TELEMETRY_WA_DEFAULT_CLUSTER_TYPE = "DISTROX";
+
+    private static final String ATTRIBUE_SDX_ID = "sdxId";
+
+    private static final String ATTRIBUTE_SDX_NAME = "sdxName";
 
     @Value("${altus.databus.endpoint:}")
     private String databusEndpoint;
@@ -112,15 +119,13 @@ public class ClouderaManagerMgmtTelemetryService {
         }
     }
 
-    // TODO: Add sdx id from sdx context if it is filled
     @VisibleForTesting
     ApiConfigList buildTelemetryConfigList(Stack stack, WorkloadAnalytics wa, String sdxContext) {
         final Map<String, String> configsToUpdate = new HashMap<>();
-        String sdxId = String.format("%s-%d", stack.getCluster().getName(), stack.getCluster().getId());
         Map<String, String> telemetrySafetyValveMap = new HashMap<>();
-        telemetrySafetyValveMap.put(DATABUS_HEADER_SDX_ID, sdxId);
         telemetrySafetyValveMap.put(TELEMETRY_WA_CLUSTER_TYPE_HEADER,
                 TELEMETRY_WA_DEFAULT_CLUSTER_TYPE);
+        enrichWithSdxData(sdxContext, stack, wa, telemetrySafetyValveMap);
         telemetrySafetyValveMap.put(TELEMETRY_UPLOAD_LOGS, "true");
         configsToUpdate.put(TELEMETRY_SAFETY_VALVE, createStringFromSafetyValveMap(telemetrySafetyValveMap));
         if (StringUtils.isNotEmpty(wa.getDatabusEndpoint())) {
@@ -155,6 +160,24 @@ public class ClouderaManagerMgmtTelemetryService {
             privateKey = trimAndReplacePrivateKey(wa.getPrivateKey().toCharArray());
         }
         return new AltusCredential(accessKey, privateKey.toCharArray());
+    }
+
+    // TODO: Add sdx id & name from sdx context if it is filled
+    @VisibleForTesting
+    void enrichWithSdxData(String sdxContext, Stack stack, WorkloadAnalytics wa, Map<String, String> telemetrySafetyValveMap) {
+        final String sdxId;
+        final String sdxName;
+        Map<String, Object> attributes = wa.getAttributes();
+        if (attributes != null && attributes.get(ATTRIBUE_SDX_ID) != null
+                && attributes.get(ATTRIBUTE_SDX_NAME) != null) {
+            sdxId = attributes.get(ATTRIBUE_SDX_ID).toString();
+            sdxName = attributes.get(ATTRIBUTE_SDX_NAME).toString();
+        } else {
+            sdxName = String.format("%s-%s", stack.getCluster().getName(), stack.getCluster().getId().toString());
+            sdxId = UUID.nameUUIDFromBytes(sdxName.getBytes()).toString();
+        }
+        telemetrySafetyValveMap.put(DATABUS_HEADER_SDX_ID, sdxId);
+        telemetrySafetyValveMap.put(DATABUS_HEADER_SDX_NAME, sdxName);
     }
 
     // CM expects the private key to come in as a single line, so we need to

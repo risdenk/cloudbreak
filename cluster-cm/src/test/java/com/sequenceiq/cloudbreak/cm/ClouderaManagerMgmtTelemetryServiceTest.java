@@ -9,6 +9,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -167,6 +170,39 @@ public class ClouderaManagerMgmtTelemetryServiceTest {
         // THEN
         assertEquals(2, result.getItems().size());
         assertTrue(containsConfigWithValue(result, "telemetry_altus_url", "customEndpoint"));
+    }
+
+    @Test
+    public void testEnrichWithSdxData() {
+        // GIVEN
+        Stack stack = new Stack();
+        Cluster cluster = new Cluster();
+        cluster.setId(1L);
+        cluster.setName("cl1");
+        stack.setCluster(cluster);
+        Map<String, String> safetyValveMap = new HashMap<>();
+        WorkloadAnalytics wa = new WorkloadAnalytics(true, "customEndpoint", null, null, null);
+        // WHEN
+        underTest.enrichWithSdxData(null, stack, wa, safetyValveMap);
+        // THEN
+        assertTrue(safetyValveMap.containsKey("databus.header.sdx.id"));
+        assertTrue(safetyValveMap.containsKey("databus.header.sdx.name"));
+        assertEquals(safetyValveMap.get("databus.header.sdx.name"), "cl1-1");
+    }
+
+    @Test
+    public void testEnrichWithSdxDataWithProvidedSdxData() {
+        // GIVEN
+        Map<String, String> safetyValveMap = new HashMap<>();
+        Map<String, Object> sdxDataMap = new HashMap<>();
+        sdxDataMap.put("sdxId", "mySdxId");
+        sdxDataMap.put("sdxName", "mySdxName");
+        WorkloadAnalytics wa = new WorkloadAnalytics(true, "customEndpoint", null, null, sdxDataMap);
+        // WHEN
+        underTest.enrichWithSdxData(null, null, wa, safetyValveMap);
+        // THEN
+        assertEquals(safetyValveMap.get("databus.header.sdx.id"), "mySdxId");
+        assertEquals(safetyValveMap.get("databus.header.sdx.name"), "mySdxName");
     }
 
     private boolean containsConfigWithValue(ApiConfigList configList, String configKey, String configValue) {
