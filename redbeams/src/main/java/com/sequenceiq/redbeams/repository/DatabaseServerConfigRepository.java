@@ -19,8 +19,7 @@ import com.sequenceiq.redbeams.domain.DatabaseServerConfig;
 public interface DatabaseServerConfigRepository extends JpaRepository<DatabaseServerConfig, Long> {
 
     @Query("SELECT s FROM DatabaseServerConfig s WHERE"
-            + " s.workspaceId = :workspaceId AND s.environmentId = :environmentId"
-            + " AND s.resourceStatus = 'USER_MANAGED'")
+            + " s.workspaceId = :workspaceId AND s.environmentId = :environmentId")
     Set<DatabaseServerConfig> findAllByWorkspaceIdAndEnvironmentId(@Param("workspaceId")Long workspaceId, @Param("environmentId")String environmentId);
 
     Optional<DatabaseServerConfig> findByNameAndWorkspaceIdAndEnvironmentId(String name, Long workspaceId, String environmentId);
