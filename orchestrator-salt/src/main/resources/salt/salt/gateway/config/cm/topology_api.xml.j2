@@ -26,6 +26,86 @@
         </provider>
 
         <provider>
+            <role>identity-assertion</role>
+            <name>HadoopGroupProvider</name>
+            <enabled>true</enabled>
+            <param>
+                <name>CENTRAL_GROUP_CONFIG_PREFIX</name>
+                <value>gateway.group.config.</value>
+            </param>
+        </provider>
+
+        <provider>
+            <role>authorization</role>
+            <name>AclsAuthz</name>
+            <enabled>true</enabled>
+            <param>
+                <name>knox.acl.mode</name>
+                <value>AND</value>
+            </param>
+            <param>
+                <name>atlas-api.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>cm-api.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>hive.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>impala.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>jobtracker.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>livyserver.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>namenode.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>nifi.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>oozie.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>ranger.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>resourcemanager.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>smm-api.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>solr.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>webhbase.acl</name>
+                <value>*;users;*</value>
+            </param>
+            <param>
+                <name>webhdfs.acl</name>
+                <value>*;users;*</value>
+            </param>
+        </provider>
+
+        <provider>
             <role>ha</role>
             <name>HaProvider</name>
             <enabled>true</enabled>

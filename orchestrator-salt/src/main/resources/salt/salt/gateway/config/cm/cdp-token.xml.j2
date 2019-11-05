@@ -26,6 +26,29 @@
          <enabled>true</enabled>
       </provider>
 
+      <provider>
+         <role>identity-assertion</role>
+         <name>HadoopGroupProvider</name>
+         <enabled>true</enabled>
+         <param>
+            <name>CENTRAL_GROUP_CONFIG_PREFIX</name>
+            <value>gateway.group.config.</value>
+         </param>
+      </provider>
+
+      <provider>
+         <role>authorization</role>
+         <name>AclsAuthz</name>
+         <enabled>true</enabled>
+         <param>
+            <name>knox.acl.mode</name>
+            <value>AND</value>
+         </param>
+         <param>
+            <name>knoxtoken.acl</name>
+            <value>*;users;*</value>
+         </param>
+      </provider>
    </gateway>
 
    <service>
@@ -39,5 +62,4 @@
          <value>cookie.name=hadoop-jwt</value>
       </param>
    </service>
-
 </topology>
